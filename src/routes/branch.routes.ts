@@ -5,11 +5,11 @@ import { requireRole } from "../middlewares/role.middleware"
 
 const router = Router()
 
-// พนักงานสาขา + super_admin — ลูกค้าทั่วไปเข้าไม่ได้
+// เฉพาะพนักงานสาขา — user / super_admin เข้าไม่ได้ (แอดมินใช้ /api/admin/... แทน)
 router.get(
   "/ping",
   authMiddleware,
-  requireRole("branch_staff", "super_admin"),
+  requireRole("branch_staff"),
   areasController.branchPing,
 )
 

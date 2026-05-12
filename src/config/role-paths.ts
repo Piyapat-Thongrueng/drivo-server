@@ -5,7 +5,7 @@ import type { UserRole } from "../types"
  * The API returns `defaultPath` on POST /auth/login so the client can navigate once.
  */
 export const ROLE_DEFAULT_PATH: Record<UserRole, string> = {
-  user: "/",
+  user: "/customer",
   branch_staff: "/branch",
   super_admin: "/admin",
 }
