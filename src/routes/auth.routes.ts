@@ -11,8 +11,11 @@ router.post(
   "/register",
   verifyToken,
   validate(registerSchema),
-  authController.register
+  authController.register,
 )
+
+// POST /api/auth/login — JWT + profile ใน DB แล้ว (หลัง Supabase sign-in ฝั่ง client)
+router.post("/login", authMiddleware, authController.login)
 
 // GET /api/auth/me — ใช้ authMiddleware เพราะต้องการ profile ใน DB แล้ว
 router.get("/me", authMiddleware, authController.getMe)
