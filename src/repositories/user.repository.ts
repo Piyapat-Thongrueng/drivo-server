@@ -1,16 +1,16 @@
-import { eq } from "drizzle-orm"
-import { db } from "../db"
-import { users } from "../db/schema"
-import { RegisterDto, UpdateProfileDto } from "../types/dto/auth.dto"
+import { eq } from "drizzle-orm";
+import { db } from "../db";
+import { users } from "../db/schema";
+import { RegisterDto, UpdateProfileDto } from "../types/dto/auth.dto";
 
 async function findByAuthId(authId: string) {
   const result = await db
     .select()
     .from(users)
     .where(eq(users.authId, authId))
-    .limit(1)
+    .limit(1);
 
-  return result[0] ?? null
+  return result[0] ?? null;
 }
 
 async function findById(id: number) {
@@ -18,9 +18,9 @@ async function findById(id: number) {
     .select()
     .from(users)
     .where(eq(users.id, BigInt(id)))
-    .limit(1)
+    .limit(1);
 
-  return result[0] ?? null
+  return result[0] ?? null;
 }
 
 async function create(authId: string, data: RegisterDto) {
@@ -32,9 +32,9 @@ async function create(authId: string, data: RegisterDto) {
       lastName: data.lastName,
       phone: data.phone ?? null,
     })
-    .returning()
+    .returning();
 
-  return result[0]
+  return result[0];
 }
 
 async function updateById(id: number, data: UpdateProfileDto) {
@@ -45,9 +45,9 @@ async function updateById(id: number, data: UpdateProfileDto) {
       updatedAt: new Date().toISOString(),
     })
     .where(eq(users.id, BigInt(id)))
-    .returning()
+    .returning();
 
-  return result[0] ?? null
+  return result[0] ?? null;
 }
 
 export const userRepository = {
@@ -55,4 +55,4 @@ export const userRepository = {
   findById,
   create,
   updateById,
-}
+};
