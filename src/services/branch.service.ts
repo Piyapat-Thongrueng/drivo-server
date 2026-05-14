@@ -1,5 +1,6 @@
 import { branchRepository } from "../repositories/branch.repository";
 import { countryRepository } from "../repositories/country.repository";
+import { oneWayFeeRepository } from "../repositories/one-way-fee.repository";
 import { CreateBranchDto, UpdateBranchDto } from "../types/dto/branch.dto";
 import { createError } from "../utils/error";
 
@@ -69,6 +70,9 @@ async function deleteBranch(id: number) {
   if (hasBookings) {
     throw createError("Cannot delete a branch that has active bookings.", 409);
   }
+
+  // ลบ one-way fees ที่อ้างอิง branch นี้ก่อน (ป้องกัน FK constraint violation)
+  await oneWayFeeRepository.deleteByBranchId(id);
 
   await branchRepository.deleteById(id);
 }

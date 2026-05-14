@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { db } from "../db";
 import { oneWayFees } from "../db/schema";
 import { UpdateOneWayFeeDto } from "../types/dto/one-way-fee.dto";
@@ -74,10 +74,23 @@ async function updateById(id: number, data: UpdateOneWayFeeDto) {
   return result[0] ?? null;
 }
 
+// ลบ one-way fees ทั้งหมดที่เกี่ยวข้องกับ branch นั้น (ทั้ง from และ to)
+async function deleteByBranchId(branchId: number) {
+  await db
+    .delete(oneWayFees)
+    .where(
+      or(
+        eq(oneWayFees.fromBranchId, branchId),
+        eq(oneWayFees.toBranchId, branchId),
+      ),
+    );
+}
+
 export const oneWayFeeRepository = {
   findAll,
   findById,
   findByPair,
   create,
   updateById,
+  deleteByBranchId,
 };
