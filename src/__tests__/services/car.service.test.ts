@@ -7,6 +7,7 @@ jest.mock("../../repositories/car.repository", () => ({
     findAvailable: jest.fn(),
     findById: jest.fn(),
     findByLicensePlate: jest.fn(),
+    findByLicensePlateExcludingId: jest.fn(),
     create: jest.fn(),
     updateById: jest.fn(),
     softDelete: jest.fn(),
@@ -139,13 +140,15 @@ describe("carService.getAvailableCars", () => {
 // ─── getCar ───────────────────────────────────────────────────────────────────
 
 describe("carService.getCar", () => {
-  it("should return the car when found", async () => {
+  it("should return the car with hasActiveBooking when found", async () => {
     mockCarRepo.findById.mockResolvedValue(fakeCar as never);
+    mockCarRepo.hasActiveBookings.mockResolvedValue(false);
 
     const result = await carService.getCar(10);
 
     expect(mockCarRepo.findById).toHaveBeenCalledWith(10);
-    expect(result).toEqual(fakeCar);
+    expect(mockCarRepo.hasActiveBookings).toHaveBeenCalledWith(10);
+    expect(result).toEqual({ ...fakeCar, hasActiveBooking: false });
   });
 
   it("should throw AppError 404 when car is not found", async () => {
@@ -257,8 +260,39 @@ describe("carService.updateCar", () => {
 
     // ไม่ต้องเช็ค booking เพราะไม่ได้เปลี่ยนสถานะ
     expect(mockCarRepo.hasActiveBookings).not.toHaveBeenCalled();
+    expect(mockCarRepo.findByLicensePlateExcludingId).not.toHaveBeenCalled();
     expect(mockCarRepo.updateById).toHaveBeenCalledWith(10, { color: "Red" });
     expect(result?.color).toBe("Red");
+  });
+
+  it("should throw 409 when licensePlate is taken by another car", async () => {
+    mockCarRepo.findById.mockResolvedValue(fakeCar as never);
+    mockCarRepo.findByLicensePlateExcludingId.mockResolvedValue({ ...fakeCar, id: 99n } as never);
+
+    await expect(
+      carService.updateCar(10, { licensePlate: "XYZ-9999" }),
+    ).rejects.toMatchObject({
+      message: "License plate 'XYZ-9999' is already registered.",
+      statusCode: 409,
+      isAppError: true,
+    });
+
+    expect(mockCarRepo.updateById).not.toHaveBeenCalled();
+  });
+
+  it("should allow keeping the same licensePlate", async () => {
+    const updatedCar = { ...fakeCar, color: "Blue" };
+    mockCarRepo.findById.mockResolvedValue(fakeCar as never);
+    mockCarRepo.updateById.mockResolvedValue(updatedCar as never);
+
+    const result = await carService.updateCar(10, {
+      licensePlate: "ABC-1234",
+      color: "Blue",
+    });
+
+    expect(mockCarRepo.findByLicensePlateExcludingId).not.toHaveBeenCalled();
+    expect(mockCarRepo.updateById).toHaveBeenCalled();
+    expect(result?.color).toBe("Blue");
   });
 });
 

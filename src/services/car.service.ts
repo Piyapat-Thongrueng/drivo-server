@@ -17,7 +17,7 @@ async function getAvailableCars(query: AvailableQueryDto) {
   );
 }
 
-// GET /api/cars/:id
+// GET /api/cars/:id — แนบ hasActiveBooking ให้หน้าแอดมินเช็กก่อนสลับเป็น maintenance
 async function getCar(id: number) {
   const car = await carRepository.findById(id);
 
@@ -25,7 +25,9 @@ async function getCar(id: number) {
     throw createError("Car not found", 404);
   }
 
-  return car;
+  const hasActiveBooking = await carRepository.hasActiveBookings(id);
+
+  return { ...car, hasActiveBooking };
 }
 
 // POST /api/cars
@@ -56,6 +58,17 @@ async function updateCar(id: number, data: UpdateCarDto) {
 
   if (!car) {
     throw createError("Car not found", 404);
+  }
+
+  if (data.licensePlate !== undefined && data.licensePlate !== car.licensePlate) {
+    const taken = await carRepository.findByLicensePlateExcludingId(data.licensePlate, id);
+
+    if (taken) {
+      throw createError(
+        `License plate '${data.licensePlate}' is already registered.`,
+        409,
+      );
+    }
   }
 
   // ถ้าจะเปลี่ยนสถานะเป็น maintenance ต้องไม่มี active booking

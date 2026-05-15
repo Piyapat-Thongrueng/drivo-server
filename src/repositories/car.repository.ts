@@ -1,4 +1,4 @@
-import { and, count, eq, gt, inArray, isNull, lt, notInArray } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull, lt, ne, notInArray } from "drizzle-orm";
 import { db } from "../db";
 import { bookings, cars } from "../db/schema";
 import { CreateCarDto, UpdateCarDto } from "../types/dto/car.dto";
@@ -76,6 +76,23 @@ async function findByLicensePlate(licensePlate: string) {
     .select()
     .from(cars)
     .where(and(isNull(cars.deletedAt), eq(cars.licensePlate, licensePlate)))
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+/** ใช้ตอน update — ยกเว้นรถคันที่กำลังแก้ */
+async function findByLicensePlateExcludingId(licensePlate: string, excludeCarId: number) {
+  const result = await db
+    .select()
+    .from(cars)
+    .where(
+      and(
+        isNull(cars.deletedAt),
+        eq(cars.licensePlate, licensePlate),
+        ne(cars.id, BigInt(excludeCarId)),
+      ),
+    )
     .limit(1);
 
   return result[0] ?? null;
@@ -163,6 +180,7 @@ export const carRepository = {
   findAvailable,
   findById,
   findByLicensePlate,
+  findByLicensePlateExcludingId,
   create,
   updateById,
   softDelete,

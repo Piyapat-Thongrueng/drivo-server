@@ -32,7 +32,7 @@ async function create(carId: number, data: CreateCarAddonDto) {
     .values({
       carId,
       name: data.name,
-      description: data.description ?? null,
+      description: data.description,
       pricePerDay: String(data.pricePerDay),
       isAvailable: data.isAvailable ?? true,
     })
