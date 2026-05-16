@@ -1,6 +1,7 @@
 import { and, count, eq, gt, inArray, isNull, lt, ne, notInArray } from "drizzle-orm";
 import { db } from "../db";
 import { bookings, cars } from "../db/schema";
+import { AVAILABILITY_BLOCKING_STATUSES } from "../config/booking.constants";
 import { CreateCarDto, UpdateCarDto } from "../types/dto/car.dto";
 
 // ─── List ────────────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ async function findAvailable(
     .from(bookings)
     .where(
       and(
-        inArray(bookings.status, ["confirmed", "active"]),
+        inArray(bookings.status, [...AVAILABILITY_BLOCKING_STATUSES]),
         lt(bookings.pickupDatetime, dropoffDatetime),
         gt(bookings.dropoffDatetime, pickupDatetime),
       ),
