@@ -26,6 +26,15 @@ app.use(
     credentials: true,
   }),
 );
+
+// Stripe webhook ต้องการ raw body (Buffer) เพื่อตรวจ signature
+// ต้องตั้งก่อน express.json() เพราะถ้า JSON parse ไปก่อนจะทำให้ signature verify ล้มเหลว
+app.use(
+  "/api/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+);
+
+// API อื่นๆ ใช้ JSON body parser ตามปกติ
 app.use(express.json());
 
 app.get("/health", (req, res) => {

@@ -8,7 +8,8 @@ import {
   oneWayFees,
 } from "../db/schema"
 import { bookingRepository } from "../repositories/booking.repository"
-import { DEPOSIT_AMOUNT_DEFAULT, PAYMENT_DEADLINE_MS } from "../config/booking.constants"
+import { PAYMENT_DEADLINE_MS } from "../config/booking.constants"
+import { resolveCountryDepositAmount } from "../utils/deposit"
 import {
   calculateAddonAmount,
   calculateDaysAndHours,
@@ -76,6 +77,7 @@ async function createBooking(dto: CreateBookingDto, user: AuthenticatedUser) {
       id: branches.id,
       timezone: countries.timezone,
       currencyCode: countries.currencyCode,
+      defaultDepositAmount: countries.defaultDepositAmount,
     })
     .from(branches)
     .innerJoin(countries, eq(branches.countryId, countries.id))
@@ -84,6 +86,8 @@ async function createBooking(dto: CreateBookingDto, user: AuthenticatedUser) {
 
   const branch = branchRows[0]
   if (!branch) throw createError("Pickup branch not found", 404)
+
+  const depositAmount = resolveCountryDepositAmount(branch.defaultDepositAmount)
 
   // 5. Validate dropoff branch
   if (dto.dropoffBranchId !== dto.pickupBranchId) {
@@ -156,7 +160,7 @@ async function createBooking(dto: CreateBookingDto, user: AuthenticatedUser) {
     Number(car.hourlyRate),
     addonAmount,
     oneWayFee,
-    DEPOSIT_AMOUNT_DEFAULT,
+    depositAmount,
   )
 
   // 9. สร้าง booking

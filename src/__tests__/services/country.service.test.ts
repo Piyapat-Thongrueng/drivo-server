@@ -24,6 +24,7 @@ const fakeCountry = {
   currencyCode: "THB",
   timezone: "Asia/Bangkok",
   isActive: true,
+  defaultDepositAmount: "5000.00",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 }
@@ -34,6 +35,7 @@ const createPayload = {
   currencyCode: "JPY",
   timezone: "Asia/Tokyo",
   isActive: true,
+  defaultDepositAmount: 5000,
 }
 
 // รีเซ็ต mock ทุก function ก่อนแต่ละ test เพื่อไม่ให้ผลของ test ก่อนหน้ารั่วมา
@@ -79,7 +81,11 @@ describe("countryService.getCountry", () => {
 describe("countryService.createCountry", () => {
   it("should create and return the new country when code is unique", async () => {
     mockRepo.findByCode.mockResolvedValue(null as any)
-    mockRepo.create.mockResolvedValue({ ...fakeCountry, ...createPayload })
+    mockRepo.create.mockResolvedValue({
+      ...fakeCountry,
+      ...createPayload,
+      defaultDepositAmount: "5000.00",
+    })
 
     const result = await countryService.createCountry(createPayload)
 
@@ -96,6 +102,18 @@ describe("countryService.createCountry", () => {
     ).rejects.toMatchObject({
       message: "Country code 'TH' already exists",
       statusCode: 409,
+      isAppError: true,
+    })
+
+    expect(mockRepo.create).not.toHaveBeenCalled()
+  })
+
+  it("should throw AppError 400 when defaultDepositAmount is not positive", async () => {
+    await expect(
+      countryService.createCountry({ ...createPayload, defaultDepositAmount: 0 }),
+    ).rejects.toMatchObject({
+      message: "Default deposit amount must be greater than 0",
+      statusCode: 400,
       isAppError: true,
     })
 
@@ -161,6 +179,34 @@ describe("countryService.updateCountry", () => {
     // code เหมือนเดิม ไม่ต้องเรียก findByCode เลย
     expect(mockRepo.findByCode).not.toHaveBeenCalled()
     expect(mockRepo.updateById).toHaveBeenCalledTimes(1)
+  })
+
+  it("should throw AppError 400 when updating deposit to zero", async () => {
+    mockRepo.findById.mockResolvedValue(fakeCountry)
+
+    await expect(
+      countryService.updateCountry(1, { defaultDepositAmount: 0 }),
+    ).rejects.toMatchObject({
+      message: "Default deposit amount must be greater than 0",
+      statusCode: 400,
+      isAppError: true,
+    })
+  })
+
+  it("should throw AppError 409 when activating country with zero deposit", async () => {
+    mockRepo.findById.mockResolvedValue({
+      ...fakeCountry,
+      defaultDepositAmount: "0",
+      isActive: false,
+    })
+
+    await expect(
+      countryService.updateCountry(1, { isActive: true }),
+    ).rejects.toMatchObject({
+      message: "Cannot activate a country without a positive default deposit amount",
+      statusCode: 409,
+      isAppError: true,
+    })
   })
 })
 

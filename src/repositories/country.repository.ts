@@ -28,15 +28,38 @@ async function findByCode(code: string) {
 }
 
 async function create(data: CreateCountryDto) {
-  const result = await db.insert(countries).values(data).returning();
+  const result = await db
+    .insert(countries)
+    .values({
+      name: data.name,
+      code: data.code,
+      currencyCode: data.currencyCode,
+      timezone: data.timezone,
+      isActive: data.isActive,
+      defaultDepositAmount: String(data.defaultDepositAmount),
+    })
+    .returning();
 
   return result[0];
 }
 
 async function updateById(id: number, data: UpdateCountryDto) {
+  const updates: Record<string, unknown> = {
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (data.name !== undefined) updates.name = data.name;
+  if (data.code !== undefined) updates.code = data.code;
+  if (data.currencyCode !== undefined) updates.currencyCode = data.currencyCode;
+  if (data.timezone !== undefined) updates.timezone = data.timezone;
+  if (data.isActive !== undefined) updates.isActive = data.isActive;
+  if (data.defaultDepositAmount !== undefined) {
+    updates.defaultDepositAmount = String(data.defaultDepositAmount);
+  }
+
   const result = await db
     .update(countries)
-    .set({ ...data, updatedAt: new Date().toISOString() })
+    .set(updates)
     .where(eq(countries.id, BigInt(id)))
     .returning();
 

@@ -2,6 +2,21 @@ import { countryRepository } from "../repositories/country.repository"
 import { CreateCountryDto, UpdateCountryDto } from "../types/dto/country.dto"
 import { createError } from "../utils/error"
 
+function assertPositiveDeposit(amount: number) {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw createError("Default deposit amount must be greater than 0", 400)
+  }
+}
+
+function assertCanActivate(depositAmount: string | number, isActive: boolean) {
+  if (isActive && Number(depositAmount) <= 0) {
+    throw createError(
+      "Cannot activate a country without a positive default deposit amount",
+      409,
+    )
+  }
+}
+
 async function listCountries() {
   return countryRepository.findAll()
 }
@@ -17,6 +32,9 @@ async function getCountry(id: number) {
 }
 
 async function createCountry(data: CreateCountryDto) {
+  assertPositiveDeposit(data.defaultDepositAmount)
+  assertCanActivate(data.defaultDepositAmount, data.isActive)
+
   const existing = await countryRepository.findByCode(data.code)
 
   if (existing) {
@@ -41,6 +59,18 @@ async function updateCountry(id: number, data: UpdateCountryDto) {
       throw createError(`Country code '${data.code}' already exists`, 409)
     }
   }
+
+  if (data.defaultDepositAmount !== undefined) {
+    assertPositiveDeposit(data.defaultDepositAmount)
+  }
+
+  const nextDeposit =
+    data.defaultDepositAmount !== undefined
+      ? data.defaultDepositAmount
+      : Number(country.defaultDepositAmount)
+  const nextActive = data.isActive ?? country.isActive
+
+  assertCanActivate(nextDeposit, nextActive)
 
   return countryRepository.updateById(id, data)
 }

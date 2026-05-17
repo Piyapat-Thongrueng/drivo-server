@@ -2,10 +2,13 @@
 export const PAYMENT_DEADLINE_MS = 15 * 60 * 1000
 
 /**
- * Default deposit amount in the local currency unit (e.g. THB).
- * In the future this may be driven by country config.
+ * Fallback deposit when country.default_deposit_amount is missing or invalid.
+ * Normal flow uses per-country values from the database (Phase 2.5).
  */
-export const DEPOSIT_AMOUNT_DEFAULT = 5000
+export const DEPOSIT_AMOUNT_FALLBACK = 5000
+
+/** @deprecated Use countries.default_deposit_amount — kept for tests/backward refs */
+export const DEPOSIT_AMOUNT_DEFAULT = DEPOSIT_AMOUNT_FALLBACK
 
 /**
  * Booking statuses that block car availability (overlap queries).

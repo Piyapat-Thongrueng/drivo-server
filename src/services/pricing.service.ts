@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm"
 import { db } from "../db"
 import { branches, carAddons, cars, countries, oneWayFees } from "../db/schema"
-import { DEPOSIT_AMOUNT_DEFAULT } from "../config/booking.constants"
+import { resolveCountryDepositAmount } from "../utils/deposit"
 import {
   calculateAddonAmount,
   calculateDaysAndHours,
@@ -44,6 +44,7 @@ async function previewPricing(dto: PricingPreviewDto) {
       countryId: branches.countryId,
       timezone: countries.timezone,
       currencyCode: countries.currencyCode,
+      defaultDepositAmount: countries.defaultDepositAmount,
     })
     .from(branches)
     .innerJoin(countries, eq(branches.countryId, countries.id))
@@ -52,6 +53,8 @@ async function previewPricing(dto: PricingPreviewDto) {
 
   const branch = branchResult[0]
   if (!branch) throw createError("Pickup branch not found", 404)
+
+  const depositAmount = resolveCountryDepositAmount(branch.defaultDepositAmount)
 
   // 4. Fetch addons (only available, belonging to this car)
   const addonRows =
@@ -112,7 +115,7 @@ async function previewPricing(dto: PricingPreviewDto) {
     Number(car.hourlyRate),
     addonAmount,
     oneWayFee,
-    DEPOSIT_AMOUNT_DEFAULT,
+    depositAmount,
   )
 
   return {

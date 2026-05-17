@@ -9,6 +9,7 @@ import countryRouter from "./country.routes"
 import oneWayFeesRouter from "./one-way-fees.routes"
 import pricingRouter from "./pricing.routes"
 import userRouter from "./user.routes"
+import webhookRouter from "./webhook.routes"
 
 const router = Router()
 
@@ -26,5 +27,8 @@ router.use("/bookings", bookingRouter)
 router.use("/user", userRouter)
 router.use("/branch", branchRouter)
 router.use("/admin", adminRouter)
+
+// Stripe webhook — ไม่ใช้ authMiddleware เพราะ verify ด้วย signature แทน
+router.use("/webhooks", webhookRouter)
 
 export default router
