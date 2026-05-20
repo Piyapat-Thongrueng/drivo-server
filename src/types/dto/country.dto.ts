@@ -12,6 +12,9 @@ export const createCountrySchema = z.object({
     .transform((s) => s.toUpperCase()),
   timezone: z.string().min(1, "Timezone is required"),
   isActive: z.boolean().default(true),
+  defaultDepositAmount: z
+    .number()
+    .positive("Default deposit amount must be greater than 0"),
 })
 
 export const updateCountrySchema = z.object({
@@ -28,6 +31,10 @@ export const updateCountrySchema = z.object({
     .optional(),
   timezone: z.string().min(1, "Timezone is required").optional(),
   isActive: z.boolean().optional(),
+  defaultDepositAmount: z
+    .number()
+    .positive("Default deposit amount must be greater than 0")
+    .optional(),
 })
 
 export type CreateCountryDto = z.infer<typeof createCountrySchema>

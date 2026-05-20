@@ -19,10 +19,18 @@ export function validate<T extends ZodType>(schema: T, source: ValidateSource = 
     }
 
     // ใช้ข้อมูลที่ผ่าน Zod transform/coerce แล้ว แทนที่ raw input เดิม
-    // cast เป็น any เพราะ Zod output<T> กับ Express ParsedQs ไม่ compatible ใน type level
     if (source === "query") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      req.query = result.data as any
+      // Express 5 ทำให้ req.query เป็น read-only getter บน prototype ของ IncomingMessage
+      // การ assign ตรงๆ (req.query = ...) จึงล้มเหลว
+      // แก้โดยใช้ Object.defineProperty บน instance เพื่อสร้าง "own property"
+      // ที่บัง prototype getter — controllers ยังอ่าน req.query ได้ตามปกติ
+      Object.defineProperty(req, "query", {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value: result.data as any,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      })
     } else {
       req.body = result.data
     }

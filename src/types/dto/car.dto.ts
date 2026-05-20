@@ -33,8 +33,9 @@ export const updateCarSchema = createCarSchema
 
 export const availableQuerySchema = z.object({
   pickupBranchId: z.coerce.number().int().positive(),
-  pickupDatetime: z.string().datetime({ message: "Invalid pickupDatetime" }),
-  dropoffDatetime: z.string().datetime({ message: "Invalid dropoffDatetime" }),
+  // รองรับ ISO พร้อม timezone offset (เช่น +07:00) ให้ตรงกับ frontend หลังแก้ timezone
+  pickupDatetime: z.string().datetime({ offset: true, message: "Invalid pickupDatetime" }),
+  dropoffDatetime: z.string().datetime({ offset: true, message: "Invalid dropoffDatetime" }),
 });
 
 export type CreateCarDto = z.infer<typeof createCarSchema>;

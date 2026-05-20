@@ -1,0 +1,89 @@
+{
+  "timezone": "Asia/Bangkok",
+  "cases": [
+    {
+      "id": "reviewer-10-12",
+      "description": "Reviewer: 10:00 → 12:00 same day = 2 hours",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-10T12:00:00+07:00",
+      "expected": { "days": 0, "hours": 2 }
+    },
+    {
+      "id": "reviewer-10-15",
+      "description": "Reviewer: 10:00 → 15:00 same day = 1 day (return after 14:00)",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-10T15:00:00+07:00",
+      "expected": { "days": 1, "hours": 0 }
+    },
+    {
+      "id": "same-day-return-at-14",
+      "description": "10:00 → 14:00 sharp = 4 hours (not after 14:00)",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-10T14:00:00+07:00",
+      "expected": { "days": 0, "hours": 4 }
+    },
+    {
+      "id": "same-day-return-14-01",
+      "description": "10:00 → 14:01 = 1 day (just after 14:00)",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-10T14:01:00+07:00",
+      "expected": { "days": 1, "hours": 0 }
+    },
+    {
+      "id": "same-day-rule2-over-8h",
+      "description": "Rule 2: 10:00 → 19:00 same day (9 h) → 1 day",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-10T19:00:00+07:00",
+      "expected": { "days": 1, "hours": 0 }
+    },
+    {
+      "id": "same-day-exact-8h-return-after-14",
+      "description": "08:00 → 16:00 = 8 h exactly (not > 8 h) but return after 14:00 → 1 day",
+      "pickup": "2026-06-10T08:00:00+07:00",
+      "dropoff": "2026-06-10T16:00:00+07:00",
+      "expected": { "days": 1, "hours": 0 }
+    },
+    {
+      "id": "same-day-09-14",
+      "description": "09:00 → 14:00 sharp = 5 hours",
+      "pickup": "2026-06-10T09:00:00+07:00",
+      "dropoff": "2026-06-10T14:00:00+07:00",
+      "expected": { "days": 0, "hours": 5 }
+    },
+    {
+      "id": "multi-day-rule3-1day-1h",
+      "description": "Reviewer: 10:00 Day1 → 11:00 Day2 = 1 day + 1 hour",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-11T11:00:00+07:00",
+      "expected": { "days": 1, "hours": 1 }
+    },
+    {
+      "id": "multi-day-rule3-2days-0h",
+      "description": "10:00 Day1 → exactly 10:00 Day3 = 2 days + 0 hours",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-12T10:00:00+07:00",
+      "expected": { "days": 2, "hours": 0 }
+    },
+    {
+      "id": "multi-day-rule1-final-day",
+      "description": "10:00 Day1 → 15:00 Day2 = 2 days (final return after 14:00)",
+      "pickup": "2026-06-10T10:00:00+07:00",
+      "dropoff": "2026-06-11T15:00:00+07:00",
+      "expected": { "days": 2, "hours": 0 }
+    },
+    {
+      "id": "multi-day-3-days-2h",
+      "description": "08:00 Day1 → 10:00 Day4 = 3 days + 2 hours",
+      "pickup": "2026-06-10T08:00:00+07:00",
+      "dropoff": "2026-06-13T10:00:00+07:00",
+      "expected": { "days": 3, "hours": 2 }
+    },
+    {
+      "id": "same-day-under-1h",
+      "description": "13:00 → 13:30 = 0 hours (truncated)",
+      "pickup": "2026-06-10T13:00:00+07:00",
+      "dropoff": "2026-06-10T13:30:00+07:00",
+      "expected": { "days": 0, "hours": 0 }
+    }
+  ]
+}

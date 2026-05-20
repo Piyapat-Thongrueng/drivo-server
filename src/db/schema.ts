@@ -20,6 +20,7 @@ export const usersInAuth = authSchema.table("users", {
 	id: uuid("id").primaryKey().notNull(),
 })
 
+
 export const users = pgTable("users", {
 	id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
 	authId: uuid("auth_id").notNull(),
@@ -60,6 +61,7 @@ export const countries = pgTable("countries", {
 	isActive: boolean("is_active").default(true).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	defaultDepositAmount: numeric("default_deposit_amount", { precision: 10, scale:  2 }).default('5000').notNull(),
 }, (table) => [
 	index("idx_countries_is_active").using("btree", table.isActive.asc().nullsLast().op("bool_ops")),
 	unique("countries_code_key").on(table.code),
