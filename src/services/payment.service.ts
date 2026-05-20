@@ -371,9 +371,57 @@ async function cancelDepositPaymentIntent(bookingId: number) {
   }
 }
 
+// ─── Settle deposit on return ─────────────────────────────────────────────────
+
+/**
+ * ยุติ deposit PaymentIntent เมื่อลูกค้าคืนรถ
+ *
+ * - extraCharge = 0        → cancel PI  (ปล่อย hold ทั้งหมด)
+ * - 0 < extra < deposit    → capture บางส่วน (Stripe ปล่อยส่วนที่เหลือเอง)
+ * - extra >= deposit        → capture เต็มจำนวน
+ *
+ * คืนค่า: refundAmount, forfeitAmount, depositStatusValue
+ */
+async function settleDepositOnReturn(
+  bookingId: number,
+  extraCharge: number,
+  depositAmount: number,
+): Promise<{ refundAmount: number; forfeitAmount: number; depositStatus: string }> {
+  const stripe = getStripe()
+
+  const depositRow = await paymentRepository.findDepositPaymentIntentByBookingId(bookingId)
+  if (!depositRow?.stripePaymentIntentId) {
+    throw createError("Deposit payment intent not found for this booking", 409)
+  }
+  const piId = depositRow.stripePaymentIntentId
+
+  const { calculateDepositSettlement } = await import("../utils/deposit")
+  const settlement = calculateDepositSettlement(depositAmount, extraCharge)
+
+  try {
+    if (settlement.depositStatus === "released") {
+      await stripe.paymentIntents.cancel(piId)
+    } else {
+      // capture เฉพาะส่วน forfeit (smallest currency unit)
+      const captureAmount = Math.round(settlement.forfeitAmount * 100)
+      await stripe.paymentIntents.capture(piId, { amount_to_capture: captureAmount })
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    throw createError(`Stripe deposit settlement failed: ${msg}`, 502)
+  }
+
+  return {
+    refundAmount: settlement.refundAmount,
+    forfeitAmount: settlement.forfeitAmount,
+    depositStatus: settlement.depositStatus,
+  }
+}
+
 export const paymentService = {
   createCheckoutSession,
   listBookingPayments,
   handleStripeWebhook,
   cancelDepositPaymentIntent,
+  settleDepositOnReturn,
 }
