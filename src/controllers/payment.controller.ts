@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express"
 import { paymentService } from "../services/payment.service"
+import { parsePositiveIntParam } from "../utils/parse-id"
 import type { CreateCheckoutSessionDto } from "../types/dto/payment.dto"
 
 // POST /api/bookings/:id/checkout-session
@@ -9,7 +10,7 @@ async function createCheckoutSession(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const bookingId = Number(req.params.id)
+    const bookingId = parsePositiveIntParam(req.params.id, "booking id")
     const result = await paymentService.createCheckoutSession(
       bookingId,
       req.body as CreateCheckoutSessionDto,
@@ -28,7 +29,7 @@ async function listBookingPayments(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const bookingId = Number(req.params.id)
+    const bookingId = parsePositiveIntParam(req.params.id, "booking id")
     const result = await paymentService.listBookingPayments(bookingId, req.user!)
     res.json({ success: true, data: result })
   } catch (error) {

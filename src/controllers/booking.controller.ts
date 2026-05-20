@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express"
 import { bookingService } from "../services/booking.service"
+import { parsePositiveIntParam } from "../utils/parse-id"
 import type {
   CreateBookingDto,
   ListBookingsQueryDto,
@@ -17,7 +18,10 @@ async function createBooking(
       req.body as CreateBookingDto,
       req.user!,
     )
-    res.status(201).json({ success: true, data: booking })
+    res.status(201).json({
+      success: true,
+      data: { ...booking, id: Number(booking.id) },
+    })
   } catch (error) {
     next(error)
   }
@@ -44,7 +48,7 @@ async function getBooking(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = Number(req.params.id)
+    const id = parsePositiveIntParam(req.params.id, "booking id")
     const booking = await bookingService.getBooking(id, req.user!)
     res.json({ success: true, data: booking })
   } catch (error) {
@@ -59,7 +63,7 @@ async function cancelBooking(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = Number(req.params.id)
+    const id = parsePositiveIntParam(req.params.id, "booking id")
     const booking = await bookingService.cancelBooking(id, req.user!)
     res.json({ success: true, data: booking })
   } catch (error) {
@@ -89,7 +93,7 @@ async function approveBooking(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = Number(req.params.id)
+    const id = parsePositiveIntParam(req.params.id, "booking id")
     const booking = await bookingService.approveBooking(id, req.user!)
     res.json({ success: true, data: booking })
   } catch (error) {
@@ -104,7 +108,7 @@ async function rejectBooking(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = Number(req.params.id)
+    const id = parsePositiveIntParam(req.params.id, "booking id")
     const booking = await bookingService.rejectBooking(
       id,
       req.body as RejectBookingDto,

@@ -145,9 +145,15 @@ async function createCheckoutSession(
       depositIntentId: depositIntent.id,
       reference: booking.reference,
     },
-    expires_at: booking.paymentDeadline
-      ? Math.floor(new Date(booking.paymentDeadline).getTime() / 1000)
-      : Math.floor(Date.now() / 1000) + 15 * 60,
+    // Stripe บังคับ expires_at อย่างน้อย 30 นาทีจากตอนสร้าง session
+    expires_at: (() => {
+      const nowSec = Math.floor(Date.now() / 1000)
+      const stripeMin = nowSec + 30 * 60
+      const deadlineSec = booking.paymentDeadline
+        ? Math.floor(new Date(booking.paymentDeadline).getTime() / 1000)
+        : stripeMin
+      return Math.max(stripeMin, deadlineSec)
+    })(),
   })
 
   // บันทึก Stripe IDs ลง payment rows เพื่อ match ตอนรับ webhook
@@ -189,7 +195,8 @@ async function listBookingPayments(bookingId: number, user: AuthenticatedUser) {
  * POST /api/webhooks/stripe
  *
  * รับ event จาก Stripe แล้วอัปเดต DB ตามประเภท event:
- *  - payment_intent.succeeded        → rental paid
+ *  - checkout.session.completed      → primary path after Checkout (metadata on session)
+ *  - payment_intent.succeeded        → rental paid (pre-created PI with metadata only)
  *  - payment_intent.amount_capturable_updated → deposit held
  *  - payment_intent.payment_failed   → payment failed
  *
@@ -211,6 +218,10 @@ async function handleStripeWebhook(rawBody: Buffer, signature: string) {
   const obj = event.data.object as unknown as Record<string, unknown>
 
   switch (event.type) {
+    case "checkout.session.completed":
+      await handleCheckoutSessionCompleted(obj)
+      break
+
     case "payment_intent.succeeded":
       await handlePaymentIntentSucceeded(obj)
       break
@@ -233,6 +244,51 @@ async function handleStripeWebhook(rawBody: Buffer, signature: string) {
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
+
+function resolvePaymentIntentId(raw: unknown): string {
+  if (typeof raw === "string") return raw
+  if (raw && typeof raw === "object" && "id" in raw) {
+    return String((raw as { id: string }).id)
+  }
+  return ""
+}
+
+/**
+ * Checkout ชำระครบ → อ่าน metadata จาก session (ไม่ใช่ PI ที่สร้างไว้ก่อน session)
+ * Stripe Checkout สร้าง PI ใหม่ตอนจ่าย — event นี้จึงเป็นจุดอัปเดต DB หลัก
+ */
+async function handleCheckoutSessionCompleted(session: Record<string, unknown>) {
+  if (session["payment_status"] !== "paid") return
+
+  const meta = (session["metadata"] ?? {}) as Record<string, string>
+  const { bookingId, rentalPaymentId, depositPaymentId, depositIntentId } = meta
+  const sessionId = session["id"] as string
+  const checkoutPiId = resolvePaymentIntentId(session["payment_intent"])
+
+  if (!bookingId || !rentalPaymentId || !sessionId) return
+
+  const piForRental = checkoutPiId || meta["rentalIntentId"] || ""
+  if (!piForRental) return
+
+  await paymentRepository.markRentalPaid(
+    Number(rentalPaymentId),
+    piForRental,
+    sessionId,
+  )
+
+  if (depositPaymentId) {
+    const piForDeposit = meta["depositIntentId"] ?? depositIntentId ?? checkoutPiId
+    if (piForDeposit) {
+      await paymentRepository.markDepositHeld(
+        Number(depositPaymentId),
+        piForDeposit,
+        sessionId,
+      )
+    }
+  }
+
+  await tryConfirmBooking(Number(bookingId))
+}
 
 /** ค่าเช่าชำระสำเร็จ → อัปเดต rental paid แล้วเช็คว่า confirmed ได้ไหม */
 async function handlePaymentIntentSucceeded(intent: Record<string, unknown>) {

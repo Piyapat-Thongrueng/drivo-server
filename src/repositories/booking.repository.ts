@@ -69,6 +69,8 @@ async function findAll(opts?: {
 
 /** ดึง booking เดี่ยว รวม addons */
 async function findById(id: number) {
+  if (!Number.isFinite(id) || id <= 0) return null
+
   const [booking] = await db
     .select()
     .from(bookings)

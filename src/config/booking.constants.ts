@@ -1,5 +1,10 @@
-/** Time allowed to pay after admin approval (15 minutes). */
-export const PAYMENT_DEADLINE_MS = 15 * 60 * 1000
+/**
+ * Time allowed to pay after admin approval (35 minutes).
+ * Must be > 30 min because Stripe requires `expires_at` to be
+ * at least 30 minutes after Checkout Session creation.
+ * Using 35 min gives a 5-minute buffer for network latency.
+ */
+export const PAYMENT_DEADLINE_MS = 35 * 60 * 1000
 
 /**
  * Fallback deposit when country.default_deposit_amount is missing or invalid.
