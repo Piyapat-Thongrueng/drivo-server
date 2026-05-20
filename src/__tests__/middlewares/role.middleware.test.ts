@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express"
-import { requireRole } from "../../middlewares/role.middleware"
+import { requireRole, requireBranchStaff } from "../../middlewares/role.middleware"
 
 const mockRes = () => {
   const res = {} as Response
@@ -66,5 +66,73 @@ describe("requireRole", () => {
       expect(res.status).toHaveBeenCalledWith(403)
       expect(next).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe("requireBranchStaff", () => {
+  it("passes when role is branch_staff and branchId is set", () => {
+    const req = {
+      user: { id: 5, role: "branch_staff", branchId: 2 },
+    } as unknown as Request
+    const res = mockRes()
+    const next = jest.fn() as NextFunction
+
+    requireBranchStaff(req, res, next)
+
+    expect(next).toHaveBeenCalledTimes(1)
+    expect(res.status).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 when role is not branch_staff", () => {
+    const req = {
+      user: { id: 1, role: "super_admin", branchId: 1 },
+    } as unknown as Request
+    const res = mockRes()
+    const next = jest.fn() as NextFunction
+
+    requireBranchStaff(req, res, next)
+
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 when user is a regular user without branch", () => {
+    const req = {
+      user: { id: 3, role: "user", branchId: null },
+    } as unknown as Request
+    const res = mockRes()
+    const next = jest.fn() as NextFunction
+
+    requireBranchStaff(req, res, next)
+
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 when req.user is missing", () => {
+    const req = {} as unknown as Request
+    const res = mockRes()
+    const next = jest.fn() as NextFunction
+
+    requireBranchStaff(req, res, next)
+
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 with branch message when branch_staff has no branchId", () => {
+    const req = {
+      user: { id: 7, role: "branch_staff", branchId: null },
+    } as unknown as Request
+    const res = mockRes()
+    const next = jest.fn() as NextFunction
+
+    requireBranchStaff(req, res, next)
+
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining("not assigned to a branch") }),
+    )
+    expect(next).not.toHaveBeenCalled()
   })
 })
