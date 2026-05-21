@@ -1,3 +1,4 @@
+import { DASHBOARD_TIMEZONE } from "../../config/dashboard.constants"
 import { reportService } from "../../services/report.service"
 
 jest.mock("../../repositories/report.repository", () => ({
@@ -114,5 +115,31 @@ describe("reportService.getDashboard", () => {
         to: "2026-05-01",
       }),
     ).rejects.toMatchObject({ statusCode: 400, isAppError: true })
+  })
+
+  it("uses period=30 by default span (~29 days)", async () => {
+    await reportService.getDashboard({ period: "30" })
+
+    const rangeArg = mockRepo.getRevenueByCurrency.mock.calls[0][0]
+    const daySpan =
+      (new Date(rangeArg.to).getTime() - new Date(rangeArg.from).getTime()) /
+      (1000 * 60 * 60 * 24)
+    expect(daySpan).toBeGreaterThanOrEqual(28)
+    expect(daySpan).toBeLessThanOrEqual(31)
+  })
+
+  it("passes dashboard timezone to daily bucket query", async () => {
+    await reportService.getDashboard({ period: "7" })
+
+    expect(mockRepo.getRevenueDailyBuckets).toHaveBeenCalledWith(
+      expect.any(Object),
+      DASHBOARD_TIMEZONE,
+    )
+  })
+
+  it("maps revenue total as rental plus damage per currency", async () => {
+    const result = await reportService.getDashboard({})
+    const thb = result.revenue.byCurrency.find((r) => r.currency === "THB")
+    expect(thb?.total).toBe("1050.00")
   })
 })
