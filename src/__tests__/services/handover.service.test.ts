@@ -37,8 +37,11 @@ const mockPayment = paymentService as jest.Mocked<typeof paymentService>
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const branchStaff: AuthenticatedUser = { id: 10, role: "branch_staff", branchId: 1 }
-const otherBranchStaff: AuthenticatedUser = { id: 20, role: "branch_staff", branchId: 2 }
+const BRANCH_A = 1
+const BRANCH_B = 2
+
+const branchStaff: AuthenticatedUser = { id: 10, role: "branch_staff", branchId: BRANCH_A }
+const otherBranchStaff: AuthenticatedUser = { id: 20, role: "branch_staff", branchId: BRANCH_B }
 const staffNoBranch: AuthenticatedUser = { id: 30, role: "branch_staff", branchId: null }
 
 const BOOKING_ID = 100
@@ -171,6 +174,31 @@ describe("handoverService.submitPickup", () => {
       handoverService.submitPickup(BOOKING_ID, dto, staffNoBranch),
     ).rejects.toMatchObject({ statusCode: 403 })
   })
+
+  it("one-way: pickup staff at branch A succeeds; records branch_id=A", async () => {
+    mockRepo.findBookingDetailForHandover.mockResolvedValue(
+      confirmedBooking({
+        pickupBranchId: BRANCH_A,
+        dropoffBranchId: BRANCH_B,
+        pickupBranchName: "BKK",
+        dropoffBranchName: "Chiang Mai",
+      }),
+    )
+    await handoverService.submitPickup(BOOKING_ID, dto, branchStaff)
+    expect(mockRepo.insertPickup).toHaveBeenCalledWith(
+      expect.objectContaining({ branchId: BRANCH_A }),
+    )
+  })
+
+  it("one-way: dropoff staff at branch B cannot submit pickup (403)", async () => {
+    mockRepo.findBookingDetailForHandover.mockResolvedValue(
+      confirmedBooking({ pickupBranchId: BRANCH_A, dropoffBranchId: BRANCH_B }),
+    )
+    await expect(
+      handoverService.submitPickup(BOOKING_ID, dto, otherBranchStaff),
+    ).rejects.toMatchObject({ statusCode: 403 })
+    expect(mockRepo.insertPickup).not.toHaveBeenCalled()
+  })
 })
 
 // ─── submitReturn ──────────────────────────────────────────────────────────────
@@ -279,6 +307,88 @@ describe("handoverService.submitReturn", () => {
         extraCharge: 2000,
       }),
     )
+  })
+
+  it("passes forfeited status when extraCharge equals deposit", async () => {
+    const fullForfeitDto = { ...returnDto, extraCharge: DEPOSIT_AMOUNT }
+    mockPayment.settleDepositOnReturn.mockResolvedValue({
+      refundAmount: 0,
+      forfeitAmount: DEPOSIT_AMOUNT,
+      depositStatus: "forfeited",
+    } as never)
+
+    await handoverService.submitReturn(BOOKING_ID, fullForfeitDto, branchStaff)
+
+    expect(mockRepo.insertReturn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        depositStatusValue: "forfeited",
+        forfeitAmount: DEPOSIT_AMOUNT,
+        dropoffBranchId: 1,
+      }),
+    )
+  })
+
+  it("one-way: return staff at branch B succeeds; records branch_id=B", async () => {
+    const oneWayActive = makeBooking({
+      status: "active",
+      pickupBranchId: BRANCH_A,
+      dropoffBranchId: BRANCH_B,
+      handovers: [{ id: 1, type: "pickup", fuelLevel: "full", extraCharge: "0", photos: [] }],
+    })
+    mockRepo.findBookingDetailForHandover.mockResolvedValue(oneWayActive)
+
+    await handoverService.submitReturn(BOOKING_ID, returnDto, otherBranchStaff)
+
+    expect(mockPayment.settleDepositOnReturn).toHaveBeenCalled()
+    expect(mockRepo.insertReturn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        branchId: BRANCH_B,
+        dropoffBranchId: BRANCH_B,
+      }),
+    )
+  })
+
+  it("one-way: pickup staff at branch A cannot submit return (403)", async () => {
+    mockRepo.findBookingDetailForHandover.mockResolvedValue(
+      makeBooking({
+        status: "active",
+        pickupBranchId: BRANCH_A,
+        dropoffBranchId: BRANCH_B,
+        handovers: [{ id: 1, type: "pickup", fuelLevel: "full", extraCharge: "0", photos: [] }],
+      }),
+    )
+    await expect(
+      handoverService.submitReturn(BOOKING_ID, returnDto, branchStaff),
+    ).rejects.toMatchObject({ statusCode: 403 })
+    expect(mockRepo.insertReturn).not.toHaveBeenCalled()
+  })
+})
+
+// ─── getPickupQueue / getReturnQueue ───────────────────────────────────────────
+
+describe("handoverService.getPickupQueue", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("delegates to repository with staff branchId", async () => {
+    mockRepo.findPickupQueue.mockResolvedValue([])
+    await handoverService.getPickupQueue(branchStaff, "DRV")
+    expect(mockRepo.findPickupQueue).toHaveBeenCalledWith(BRANCH_A, "DRV")
+  })
+
+  it("throws 403 when staff has no branchId", async () => {
+    await expect(handoverService.getPickupQueue(staffNoBranch)).rejects.toMatchObject({
+      statusCode: 403,
+    })
+  })
+})
+
+describe("handoverService.getReturnQueue", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("delegates to repository with staff branchId", async () => {
+    mockRepo.findReturnQueue.mockResolvedValue([])
+    await handoverService.getReturnQueue(otherBranchStaff)
+    expect(mockRepo.findReturnQueue).toHaveBeenCalledWith(BRANCH_B, undefined)
   })
 })
 

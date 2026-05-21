@@ -39,7 +39,7 @@ async function getReturnQueue(req: Request, res: Response, next: NextFunction): 
 // GET /api/branch/bookings/:id
 async function getBookingDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const bookingId = parsePositiveIntParam(req.params, "id")
+    const bookingId = parsePositiveIntParam(req.params.id, "id")
     const data = await handoverService.getBookingDetail(bookingId, req.user!)
     res.json({ success: true, data })
   } catch (err) {
@@ -50,10 +50,10 @@ async function getBookingDetail(req: Request, res: Response, next: NextFunction)
 // POST /api/branch/bookings/:id/pickup
 async function submitPickup(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const bookingId = parsePositiveIntParam(req.params, "id")
+    const bookingId = parsePositiveIntParam(req.params.id, "id")
     const parsed = pickupHandoverSchema.safeParse(req.body)
     if (!parsed.success) {
-      throw createError(parsed.error.errors[0]?.message ?? "Invalid request body", 400)
+      throw createError(parsed.error.issues[0]?.message ?? "Invalid request body", 400)
     }
     const data = await handoverService.submitPickup(bookingId, parsed.data, req.user!)
     res.status(201).json({ success: true, data })
@@ -65,10 +65,10 @@ async function submitPickup(req: Request, res: Response, next: NextFunction): Pr
 // POST /api/branch/bookings/:id/return
 async function submitReturn(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const bookingId = parsePositiveIntParam(req.params, "id")
+    const bookingId = parsePositiveIntParam(req.params.id, "id")
     const parsed = returnHandoverSchema.safeParse(req.body)
     if (!parsed.success) {
-      throw createError(parsed.error.errors[0]?.message ?? "Invalid request body", 400)
+      throw createError(parsed.error.issues[0]?.message ?? "Invalid request body", 400)
     }
     const data = await handoverService.submitReturn(bookingId, parsed.data, req.user!)
     res.status(201).json({ success: true, data })

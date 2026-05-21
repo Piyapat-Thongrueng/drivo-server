@@ -37,7 +37,7 @@ export const returnHandoverSchema = z
   .object({
     fuelLevel: fuelLevelEnum,
     extraCharge: z
-      .number({ invalid_type_error: "extraCharge must be a number" })
+      .number()
       .nonnegative("extraCharge cannot be negative")
       .finite(),
     photos: z
