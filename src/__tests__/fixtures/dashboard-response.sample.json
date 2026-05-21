@@ -1,0 +1,61 @@
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "bookingsToday": 4,
+      "bookingsTodayDelta": 1,
+      "pendingApproval": 2,
+      "activeRentals": 3,
+      "completedToday": 1
+    },
+    "revenue": {
+      "range": { "from": "2026-04-22", "to": "2026-05-21" },
+      "byCurrency": [
+        {
+          "currency": "THB",
+          "rental": "110000.00",
+          "deposit": "15000.00",
+          "damage": "8000.00",
+          "total": "118000.00"
+        }
+      ]
+    },
+    "revenueChart": {
+      "days": ["2026-05-15", "2026-05-16", "2026-05-21"],
+      "series": [{ "currency": "THB", "points": [0, 5000, 118000] }]
+    },
+    "revenueBreakdown": [
+      {
+        "country": "Thailand",
+        "branch": "Suvarnabhumi",
+        "branchId": 1,
+        "currency": "THB",
+        "bookings": 45,
+        "revenue": "67500.00"
+      }
+    ],
+    "recentBookings": [
+      {
+        "id": 10,
+        "reference": "DRV-20260521-ABCD",
+        "status": "pending_approval",
+        "customerName": "John Doe",
+        "carLabel": "Toyota Camry",
+        "pickupBranchName": "Donmueang International Airport",
+        "totalAmount": "5000.00",
+        "currencyCode": "THB",
+        "createdAt": "2026-05-21T08:00:00.000Z"
+      }
+    ],
+    "fleetByBranch": [
+      {
+        "branchId": 1,
+        "branchName": "Suvarnabhumi",
+        "total": 15,
+        "available": 8,
+        "booked": 6,
+        "maintenance": 1
+      }
+    ]
+  }
+}
