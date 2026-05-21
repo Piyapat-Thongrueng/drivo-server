@@ -3,13 +3,25 @@ import { carController } from "../controllers/car.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { requireRole } from "../middlewares/role.middleware";
 import { validate } from "../middlewares/validate.middleware";
-import { availableQuerySchema, createCarSchema, updateCarSchema } from "../types/dto/car.dto";
+import {
+  availableQuerySchema,
+  createCarSchema,
+  fleetQuerySchema,
+  updateCarSchema,
+} from "../types/dto/car.dto";
 import carAddonsRouter from "./car-addons.routes";
 
 const router = Router();
 
 // GET /api/cars — admin ดูรายการรถทั้งหมด (รองรับ ?branchId=1)
 router.get("/", authMiddleware, requireRole("super_admin"), carController.listCars);
+
+// GET /api/cars/fleet — public (Our fleet page)
+router.get(
+  "/fleet",
+  validate(fleetQuerySchema, "query"),
+  carController.getFleet,
+);
 
 // GET /api/cars/available — public (user ใช้ตอนค้นหา)
 // ต้องวางก่อน /:id เพื่อไม่ให้ "available" ถูก parse เป็น param

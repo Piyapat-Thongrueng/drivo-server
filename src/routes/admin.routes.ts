@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { areasController } from "../controllers/areas.controller"
 import { bookingController } from "../controllers/booking.controller"
+import { reportController } from "../controllers/report.controller"
 import { authMiddleware } from "../middlewares/auth.middleware"
 import { requireRole } from "../middlewares/role.middleware"
 import { validate } from "../middlewares/validate.middleware"
@@ -8,6 +9,7 @@ import {
   listBookingsQuerySchema,
   rejectBookingSchema,
 } from "../types/dto/booking.dto"
+import { dashboardQuerySchema } from "../types/dto/report.dto"
 
 const router = Router()
 
@@ -17,6 +19,15 @@ router.get(
   authMiddleware,
   requireRole("super_admin"),
   areasController.adminPing,
+)
+
+// GET /api/admin/dashboard?period=30&chartCurrency=THB
+router.get(
+  "/dashboard",
+  authMiddleware,
+  requireRole("super_admin"),
+  validate(dashboardQuerySchema, "query"),
+  reportController.getDashboard,
 )
 
 // ─── Booking management (admin) ───────────────────────────────────────────────

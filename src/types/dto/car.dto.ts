@@ -38,6 +38,12 @@ export const availableQuerySchema = z.object({
   dropoffDatetime: z.string().datetime({ offset: true, message: "Invalid dropoffDatetime" }),
 });
 
+/** GET /api/cars/fleet — ดูรถทั้งหมด แยกตามประเทศ (public) */
+export const fleetQuerySchema = z.object({
+  countryId: z.coerce.number().int().positive().optional(),
+});
+
 export type CreateCarDto = z.infer<typeof createCarSchema>;
 export type UpdateCarDto = z.infer<typeof updateCarSchema>;
 export type AvailableQueryDto = z.infer<typeof availableQuerySchema>;
+export type FleetQueryDto = z.infer<typeof fleetQuerySchema>;
