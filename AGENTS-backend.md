@@ -40,8 +40,12 @@ DATABASE_URL=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 PORT=4000
+CORS_ORIGINS=https://drivo-gamma.vercel.app,http://localhost:3000
 ```
+
+`CORS_ORIGINS` — comma-separated frontend origins for CORS. Omit locally to use default localhost ports.
 
 - **NEVER hardcode** these values in code
 - **NEVER commit** .env file to git
