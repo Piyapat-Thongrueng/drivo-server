@@ -1,12 +1,29 @@
 import { NextFunction, Request, Response } from "express";
 import { carService } from "../services/car.service";
-import { AvailableQueryDto, CreateCarDto, UpdateCarDto } from "../types/dto/car.dto";
+import {
+  AvailableQueryDto,
+  CreateCarDto,
+  FleetQueryDto,
+  UpdateCarDto,
+} from "../types/dto/car.dto";
 
 // GET /api/cars?branchId=1
 async function listCars(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const branchId = req.query.branchId ? Number(req.query.branchId) : undefined;
     const cars = await carService.listCars(branchId);
+
+    res.json({ success: true, data: cars });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// GET /api/cars/fleet?countryId=1 — public catalog
+async function getFleet(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const query = req.query as unknown as FleetQueryDto;
+    const cars = await carService.getFleet(query);
 
     res.json({ success: true, data: cars });
   } catch (error) {
@@ -85,6 +102,7 @@ async function deleteCar(req: Request, res: Response, next: NextFunction): Promi
 
 export const carController = {
   listCars,
+  getFleet,
   getAvailableCars,
   getCar,
   createCar,

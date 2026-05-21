@@ -1,6 +1,11 @@
 import { carRepository } from "../repositories/car.repository";
 import { branchRepository } from "../repositories/branch.repository";
-import { AvailableQueryDto, CreateCarDto, UpdateCarDto } from "../types/dto/car.dto";
+import {
+  AvailableQueryDto,
+  CreateCarDto,
+  FleetQueryDto,
+  UpdateCarDto,
+} from "../types/dto/car.dto";
 import { createError } from "../utils/error";
 
 // GET /api/cars — admin ดูทั้งหมด
@@ -15,6 +20,11 @@ async function getAvailableCars(query: AvailableQueryDto) {
     query.pickupDatetime,
     query.dropoffDatetime,
   );
+}
+
+// GET /api/cars/fleet — รายการรถทั้งหมดแยกตามประเทศ (public)
+async function getFleet(query: FleetQueryDto) {
+  return carRepository.findFleet(query.countryId);
 }
 
 // GET /api/cars/:id — แนบ hasActiveBooking ให้หน้าแอดมินเช็กก่อนสลับเป็น maintenance
@@ -109,6 +119,7 @@ async function deleteCar(id: number) {
 
 export const carService = {
   listCars,
+  getFleet,
   getAvailableCars,
   getCar,
   createCar,

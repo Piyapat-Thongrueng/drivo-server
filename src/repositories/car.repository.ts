@@ -1,6 +1,18 @@
-import { and, count, eq, gt, inArray, isNull, lt, ne, notInArray } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  getTableColumns,
+  gt,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  notInArray,
+} from "drizzle-orm";
 import { db } from "../db";
-import { bookings, cars } from "../db/schema";
+import { bookings, branches, cars, countries } from "../db/schema";
 import { AVAILABILITY_BLOCKING_STATUSES } from "../config/booking.constants";
 import { CreateCarDto, UpdateCarDto } from "../types/dto/car.dto";
 
@@ -20,6 +32,35 @@ async function findAll(branchId?: number) {
     .from(cars)
     .where(isNull(cars.deletedAt))
     .orderBy(cars.make, cars.model);
+}
+
+// GET /api/cars/fleet — รถทั้งหมดสำหรับหน้า Our fleet (ตามประเทศของสาขาที่รถอยู่)
+async function findFleet(countryId?: number) {
+  const conditions = [
+    isNull(cars.deletedAt),
+    eq(branches.isActive, true),
+    eq(countries.isActive, true),
+  ];
+
+  if (countryId !== undefined) {
+    conditions.push(eq(branches.countryId, countryId));
+  }
+
+  const carColumns = getTableColumns(cars);
+
+  return db
+    .select({
+      ...carColumns,
+      countryId: branches.countryId,
+      countryName: countries.name,
+      currencyCode: countries.currencyCode,
+      branchName: branches.name,
+    })
+    .from(cars)
+    .innerJoin(branches, eq(cars.currentBranchId, branches.id))
+    .innerJoin(countries, eq(branches.countryId, countries.id))
+    .where(and(...conditions))
+    .orderBy(asc(countries.name), asc(branches.name), asc(cars.make), asc(cars.model));
 }
 
 // GET /api/cars/available — รถว่างตาม branch + ช่วงเวลา
@@ -178,6 +219,7 @@ async function hasActiveBookings(carId: number) {
 
 export const carRepository = {
   findAll,
+  findFleet,
   findAvailable,
   findById,
   findByLicensePlate,
