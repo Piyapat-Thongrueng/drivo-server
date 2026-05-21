@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import router from "./routes";
+import { getCorsOrigins } from "./config/cors";
 import { errorMiddleware } from "./middlewares/error.middleware";
 
 // Import types augmentation so req.user and req.supabaseAuthId are available globally
@@ -17,15 +18,19 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-    ],
+    origin: getCorsOrigins(),
     credentials: true,
   }),
 );
+
+// Stripe webhook ต้องการ raw body (Buffer) เพื่อตรวจ signature
+// ต้องตั้งก่อน express.json() เพราะถ้า JSON parse ไปก่อนจะทำให้ signature verify ล้มเหลว
+app.use(
+  "/api/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+);
+
+// API อื่นๆ ใช้ JSON body parser ตามปกติ
 app.use(express.json());
 
 app.get("/health", (req, res) => {

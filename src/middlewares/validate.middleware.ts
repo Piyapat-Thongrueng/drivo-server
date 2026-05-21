@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express"
 import type { ZodType } from "zod"
 
-// Generic middleware factory ที่รับ Zod schema แล้ว validate req.body
+type ValidateSource = "body" | "query"
+
+// Generic middleware factory ที่รับ Zod schema แล้ว validate req.body หรือ req.query
 // Zod 4: ใช้ ZodType แทน ZodSchema (ZodSchema เป็น alias ที่ deprecated)
-export function validate<T extends ZodType>(schema: T) {
+export function validate<T extends ZodType>(schema: T, source: ValidateSource = "body") {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const result = schema.safeParse(req.body)
+    const input = source === "query" ? req.query : req.body
+    const result = schema.safeParse(input)
 
     if (!result.success) {
       res.status(400).json({
@@ -15,8 +18,22 @@ export function validate<T extends ZodType>(schema: T) {
       return
     }
 
-    // ใช้ข้อมูลที่ผ่าน Zod transform/coerce แล้ว แทนที่ raw body เดิม
-    req.body = result.data
+    // ใช้ข้อมูลที่ผ่าน Zod transform/coerce แล้ว แทนที่ raw input เดิม
+    if (source === "query") {
+      // Express 5 ทำให้ req.query เป็น read-only getter บน prototype ของ IncomingMessage
+      // การ assign ตรงๆ (req.query = ...) จึงล้มเหลว
+      // แก้โดยใช้ Object.defineProperty บน instance เพื่อสร้าง "own property"
+      // ที่บัง prototype getter — controllers ยังอ่าน req.query ได้ตามปกติ
+      Object.defineProperty(req, "query", {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value: result.data as any,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      })
+    } else {
+      req.body = result.data
+    }
     next()
   }
 }

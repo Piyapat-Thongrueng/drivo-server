@@ -2,6 +2,20 @@ import { userRole } from "../db/schema"
 
 export type UserRole = (typeof userRole.enumValues)[number]
 
+export type {
+  AvailabilityBlockingStatus,
+} from "../config/booking.constants"
+export { AVAILABILITY_BLOCKING_STATUSES, PAYMENT_DEADLINE_MS } from "../config/booking.constants"
+export type {
+  Booking,
+  BookingAddon,
+  BookingDetail,
+  BookingStatus,
+  CreateBookingPayload,
+  DepositStatus,
+} from "./booking"
+export type { Payment, PaymentKind, PaymentStatus } from "./payment"
+
 export type AuthenticatedUser = {
   id: number
   role: UserRole

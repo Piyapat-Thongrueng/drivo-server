@@ -10,5 +10,5 @@ export const db = {
   limit: jest.fn().mockReturnThis(),
   set: jest.fn().mockReturnThis(),
   values: jest.fn().mockReturnThis(),
-  returning: jest.fn().mockResolvedValue([]),
+  returning: jest.fn<() => Promise<unknown[]>>().mockResolvedValue([]),
 }

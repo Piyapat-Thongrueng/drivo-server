@@ -40,8 +40,12 @@ DATABASE_URL=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 PORT=4000
+CORS_ORIGINS=https://drivo-gamma.vercel.app,http://localhost:3000
 ```
+
+`CORS_ORIGINS` — comma-separated frontend origins for CORS. Omit locally to use default localhost ports.
 
 - **NEVER hardcode** these values in code
 - **NEVER commit** .env file to git
@@ -530,18 +534,20 @@ router.post(
 
 ```typescript
 // utils/pricing.ts
-// คำนวณราคาตาม rules ที่โจทย์กำหนด ต้องถูกต้อง 100%
+// คำนวณราคาตาม rules ที่ reviewer กำหนด ต้องถูกต้อง 100%
 // ทุก calculation ต้องใช้ timezone ของ branch เสมอ
 
-// Rule 1: คืนหลัง 14:00 = 1 วันทันที (override ทุกกฎ)
-// Rule 2: ใช้ > 8 ชั่วโมง = 1 วัน
-// Rule 3: ข้ามวัน → reset นับชั่วโมงใหม่จากเวลารับรถ (ไม่ใช่ 00:00)
+// อัตรา 2 แบบ: รายชั่วโมง + รายวัน
+// Rule 1: คืน **เกิน** 14:00 น. (ไม่รวม 14:00 พอดี) → วันนั้น = 1 วัน
+// Rule 2: ใช้ **เกิน** 8 ชั่วโมง = 1 วัน
+// Rule 3: ข้ามวัน → reset นับชั่วโมงใหม่จากเวลารับรถของวันถัดไป (ไม่ใช่ 00:00)
 
-// ตัวอย่าง:
-// 10:00 → 15:00 วันเดียวกัน = 1 วัน   (Rule 1: คืนหลัง 14:00)
-// 10:00 → 19:00 วันเดียวกัน = 1 วัน   (Rule 2: เกิน 8 ชม.)
+// ตัวอย่าง reviewer:
 // 10:00 → 12:00 วันเดียวกัน = 2 ชม.
-// 10:00 วันที่ 1 → 11:00 วันที่ 2 = 1 วัน + 1 ชม. (Rule 3)
+// 10:00 → 15:00 วันเดียวกัน = 1 วัน   (เกิน 14:00)
+// 10:00 → 14:00 วันเดียวกัน = 4 ชม.  (ไม่เกิน 14:00, ไม่เกิน 8 ชม.)
+// 10:00 → 19:00 วันเดียวกัน = 1 วัน   (เกิน 8 ชม.)
+// 10:00 วันที่ 1 → 11:00 วันที่ 2 = 1 วัน + 1 ชม.
 
 // ราคาสุดท้าย
 // = (จำนวนวัน × dailyRate) + (จำนวนชั่วโมง × hourlyRate)
